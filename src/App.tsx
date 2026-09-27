@@ -1,5 +1,6 @@
-// src/App.tsx - CHASS IMPORT CON MENÚ RESPONSIVE (3 RAYITAS)
-import { useState } from 'react';
+// src/App.tsx - CHASS IMPORT CON SUPABASE & RESPONSIVE
+import { useState, useEffect } from 'react';
+import { supabase } from './supabaseClient';
 import ModalOperacion from './components/ModalOperacion';
 import SeccionInicio from './components/SeccionInicio';
 import SeccionEntradas from './components/SeccionEntradas';
@@ -18,35 +19,13 @@ export default function App() {
   const [seccionActiva, setSeccionActiva] = useState<string>('entradas');
   const [numeroSemanaActual, setNumeroSemanaActual] = useState<number>(4);
   const [movimientoModal, setMovimientoModal] = useState<any | null>(null);
-
-  // ESTADO PARA CONTROLAR EL MENÚ DESPLEGABLE EN CELULAR (3 RAYITAS)
   const [menuMovilAbierto, setMenuMovilAbierto] = useState<boolean>(false);
 
-  // BASE DE DATOS LOCAL EN VIVO
-  const [movimientos, setMovimientos] = useState<any[]>([
-    { id: 1, tipo: 'ingreso', tipoVenta: 'Venta Tienda', cliente: 'Cliente Ocasional', modeloIphone: 'iPhone 15 Pro Max', tipoCase: 'Magsafe Transparente', cantidad: 1, concepto: 'Case Magsafe + Mica', monto: 45.00, metodoPago: 'Yape / Plin', numOperacion: '982134', usuario: 'María', fecha: '27/09/2026', hora: '10:15' },
-    { id: 2, tipo: 'ingreso', tipoVenta: 'Punto de Venta', cliente: 'Punto Miraflores', modeloIphone: 'Varios (Lote)', tipoCase: 'Silicona Case', cantidad: 10, concepto: 'Lote de 10 Cases', monto: 180.00, metodoPago: 'Transferencia BCP/BBVA', numOperacion: '004921', usuario: 'María', fecha: '27/09/2026', hora: '11:30' },
-    { id: 3, tipo: 'salida', categoriaGasto: 'Delivery', concepto: 'Envío de pedido Miraflores por Olva', monto: 15.00, metodoPago: 'Efectivo', usuario: 'María', fecha: '27/09/2026', hora: '12:00' }
-  ]);
+  // ESTADOS DE DATOS DESDE SUPABASE
+  const [movimientos, setMovimientos] = useState<any[]>([]);
+  const [clientes, setClientes] = useState<any[]>([]);
+  const [bitacora, setBitacora] = useState<any[]>([]);
   
-  const [clientes, setClientes] = useState<any[]>([
-    { id: 1, nombre: 'Punto Miraflores (Tienda Aliada)', tipoCliente: 'Punto de Venta', dni: '20601234567', telefono: '912345678', direccion: 'Av. Larco 123' },
-    { id: 2, nombre: 'Juan Pérez (Cliente Frecuente)', tipoCliente: 'Cliente Frecuente', dni: '72572819', telefono: '987654321', direccion: 'Calle Las Flores 456' }
-  ]);
-
-  const [bitacora, setBitacora] = useState<any[]>([
-    {
-      id: 1,
-      semana: 4,
-      fechaHora: '27/09/2026 18:30',
-      montoFaltante: 20.00,
-      adminNota: 'Falta dinero en el conteo de efectivo al momento del arqueo de caja.',
-      empleadoRespuesta: '',
-      estado: 'PENDIENTE',
-      empleadoNombre: 'María'
-    }
-  ]);
-
   const [historialSemanas, setHistorialSemanas] = useState<any[]>([
     {
       numeroSemana: 3,
@@ -54,38 +33,56 @@ export default function App() {
       ingresos: 1250.00,
       salidas: 280.00,
       balance: 970.00,
-      movimientos: [
-        { tipo: 'ingreso', concepto: 'Lote 20 Cases iPhone 16 Pro Max', metodoPago: 'Transferencia BCP/BBVA', monto: 400.00 },
-        { tipo: 'ingreso', concepto: '5 Cases Magsafe + Micas', metodoPago: 'Yape / Plin', monto: 225.00 },
-        { tipo: 'ingreso', concepto: 'Ventas variadas mostrador', metodoPago: 'Efectivo', monto: 625.00 },
-        { tipo: 'salida', concepto: 'Pago proveedor cases importación', metodoPago: 'Transferencia BCP/BBVA', monto: 220.00 },
-        { tipo: 'salida', concepto: 'Envíos Olva Courier semana 3', metodoPago: 'Efectivo', monto: 60.00 }
-      ]
-    },
-    {
-      numeroSemana: 2,
-      fechaCierre: '13/09/2026',
-      ingresos: 980.00,
-      salidas: 190.00,
-      balance: 790.00,
-      movimientos: [
-        { tipo: 'ingreso', concepto: 'Venta lote Punto Miraflores', metodoPago: 'Transferencia BCP/BBVA', monto: 350.00 },
-        { tipo: 'ingreso', concepto: 'Ventas tienda diaria', metodoPago: 'Yape / Plin', monto: 630.00 },
-        { tipo: 'salida', concepto: 'Alimentación y pasajes tienda', metodoPago: 'Efectivo', monto: 190.00 }
-      ]
-    },
-    {
-      numeroSemana: 1,
-      fechaCierre: '06/09/2026',
-      ingresos: 820.00,
-      salidas: 120.00,
-      balance: 700.00,
-      movimientos: [
-        { tipo: 'ingreso', concepto: 'Apertura de ventas temporada', metodoPago: 'Efectivo', monto: 820.00 },
-        { tipo: 'salida', concepto: 'Insumos de empaque y bolsas', metodoPago: 'Efectivo', monto: 120.00 }
-      ]
+      movimientos: []
     }
   ]);
+
+  // CARGAR DATOS DESDE SUPABASE AL INICIAR
+  useEffect(() => {
+    cargarDatosSupabase();
+  }, []);
+
+  const cargarDatosSupabase = async () => {
+    try {
+      // 1. Cargar Movimientos
+      const { data: movData, error: movError } = await supabase.from('movimientos').select('*').order('id', { ascending: false });
+      if (!movError && movData) {
+        setMovimientos(movData.map(m => ({
+          ...m,
+          tipoVenta: m.tipo_venta,
+          modeloIphone: m.modelo_iphone,
+          tipoCase: m.tipo_case,
+          categoriaGasto: m.categoria_gasto,
+          metodoPago: m.metodo_pago,
+          numOperacion: m.num_operacion
+        })));
+      }
+
+      // 2. Cargar Clientes
+      const { data: cliData, error: cliError } = await supabase.from('clientes').select('*').order('id', { ascending: false });
+      if (!cliError && cliData) {
+        setClientes(cliData.map(c => ({
+          ...c,
+          tipoCliente: c.tipo_cliente
+        })));
+      }
+
+      // 3. Cargar Bitácora
+      const { data: bitData, error: bitError } = await supabase.from('bitacora').select('*').order('id', { ascending: false });
+      if (!bitError && bitData) {
+        setBitacora(bitData.map(b => ({
+          ...b,
+          fechaHora: b.fecha_hora,
+          montoFaltante: b.monto_faltante,
+          adminNota: b.admin_nota,
+          empleadoRespuesta: b.empleado_respuesta,
+          empleadoNombre: b.empleado_nombre
+        })));
+      }
+    } catch (err) {
+      console.error('Error cargando datos de Supabase:', err);
+    }
+  };
 
   // AUTENTICACIÓN
   const handleLogin = (e: React.FormEvent) => {
@@ -103,45 +100,161 @@ export default function App() {
     setIsAuthenticated(false); setUsername(''); setPassword('');
   };
 
-  // FUNCIONALIDADES
-  const handleAgregarMovimiento = (nuevo: any) => setMovimientos([nuevo, ...movimientos]);
-  const handleAgregarCliente = (nuevo: any) => setClientes([...clientes, nuevo]);
+  // AGREGAR MOVIMIENTO (ENTRADA / SALIDA)
+  const handleAgregarMovimiento = async (nuevo: any) => {
+    try {
+      const objetoDB = {
+        tipo: nuevo.tipo,
+        tipo_venta: nuevo.tipoVenta || null,
+        cliente: nuevo.cliente || null,
+        modelo_iphone: nuevo.modeloIphone || null,
+        tipo_case: nuevo.tipoCase || null,
+        cantidad: nuevo.cantidad || null,
+        categoria_gasto: nuevo.categoriaGasto || null,
+        concepto: nuevo.concepto,
+        monto: nuevo.monto,
+        metodo_pago: nuevo.metodoPago,
+        num_operacion: nuevo.numOperacion || null,
+        usuario: nuevo.usuario,
+        fecha: nuevo.fecha,
+        hora: nuevo.hora
+      };
 
-  const handleEditarCliente = (id: number, clienteEditado: any) => {
-    setClientes(clientes.map(c => c.id === id ? { ...c, ...clienteEditado } : c));
+      const { data, error } = await supabase.from('movimientos').insert([objetoDB]).select();
+      if (error) {
+        alert('⚠️ Error al guardar en Supabase: ' + error.message);
+        return;
+      }
+
+      if (data && data[0]) {
+        const itemCreado = {
+          ...data[0],
+          tipoVenta: data[0].tipo_venta,
+          modeloIphone: data[0].modelo_iphone,
+          tipoCase: data[0].tipo_case,
+          categoriaGasto: data[0].categoria_gasto,
+          metodoPago: data[0].metodo_pago,
+          numOperacion: data[0].num_operacion
+        };
+        setMovimientos([itemCreado, ...movimientos]);
+      }
+    } catch (err) {
+      console.error('Excepción al registrar movimiento:', err);
+    }
   };
 
-  const handleEliminarCliente = (id: number) => {
-    setClientes(clientes.filter(c => c.id !== id));
+  // AGREGAR CLIENTE
+  const handleAgregarCliente = async (nuevo: any) => {
+    try {
+      const objetoDB = {
+        nombre: nuevo.nombre,
+        tipo_cliente: nuevo.tipoCliente,
+        dni: nuevo.dni || null,
+        telefono: nuevo.telefono || null,
+        direccion: nuevo.direccion || null
+      };
+
+      const { data, error } = await supabase.from('clientes').insert([objetoDB]).select();
+      if (error) {
+        alert('⚠️ Error al guardar cliente: ' + error.message);
+        return;
+      }
+
+      if (data && data[0]) {
+        const cliCreado = { ...data[0], tipoCliente: data[0].tipo_cliente };
+        setClientes([cliCreado, ...clientes]);
+      }
+    } catch (err) {
+      console.error('Excepción al registrar cliente:', err);
+    }
   };
 
-  const handleRegistrarDiscordancia = (monto: number, nota: string) => {
-    const nueva = {
-      id: Date.now(),
-      semana: numeroSemanaActual,
-      fechaHora: new Date().toLocaleString('es-PE'),
-      montoFaltante: monto,
-      adminNota: nota || 'Se requiere revisión del efectivo en caja.',
-      empleadoRespuesta: '',
-      estado: 'PENDIENTE',
-      empleadoNombre: 'María'
-    };
-    setBitacora([nueva, ...bitacora]);
-    alert('🚨 Discordancia registrada en la bitácora.');
+  const handleEditarCliente = async (id: number, clienteEditado: any) => {
+    try {
+      const objetoDB = {
+        nombre: clienteEditado.nombre,
+        tipo_cliente: clienteEditado.tipoCliente,
+        dni: clienteEditado.dni,
+        telefono: clienteEditado.telefono,
+        direccion: clienteEditado.direccion
+      };
+
+      const { error } = await supabase.from('clientes').update(objetoDB).eq('id', id);
+      if (!error) {
+        setClientes(clientes.map(c => c.id === id ? { ...c, ...clienteEditado } : c));
+      }
+    } catch (err) {
+      console.error('Error al editar cliente:', err);
+    }
   };
 
-  const handleResponderBitacora = (id: number, respuesta: string) => {
-    setBitacora(bitacora.map(b => b.id === id ? { ...b, empleadoRespuesta: respuesta, estado: 'JUSTIFICADO' } : b));
-    alert('✅ Justificación guardada y enviada a revisión.');
+  const handleEliminarCliente = async (id: number) => {
+    try {
+      const { error } = await supabase.from('clientes').delete().eq('id', id);
+      if (!error) {
+        setClientes(clientes.filter(c => c.id !== id));
+      }
+    } catch (err) {
+      console.error('Error al eliminar cliente:', err);
+    }
   };
 
-  const handleCerrarObservacion = (id: number) => {
-    setBitacora(bitacora.map(b => b.id === id ? { ...b, estado: 'RESUELTO' } : b));
-    alert('🟢 Observación aprobada y caso cerrado.');
+  const handleRegistrarDiscordancia = async (monto: number, nota: string) => {
+    try {
+      const objetoDB = {
+        semana: numeroSemanaActual,
+        fecha_hora: new Date().toLocaleString('es-PE'),
+        monto_faltante: monto,
+        admin_nota: nota || 'Se requiere revisión del efectivo en caja.',
+        empleado_respuesta: '',
+        estado: 'PENDIENTE',
+        empleado_nombre: 'María'
+      };
+
+      const { data, error } = await supabase.from('bitacora').insert([objetoDB]).select();
+      if (!error && data && data[0]) {
+        const itemBitacora = {
+          ...data[0],
+          fechaHora: data[0].fecha_hora,
+          montoFaltante: data[0].monto_faltante,
+          adminNota: data[0].admin_nota,
+          empleadoRespuesta: data[0].empleado_respuesta,
+          empleadoNombre: data[0].empleado_nombre
+        };
+        setBitacora([itemBitacora, ...bitacora]);
+        alert('🚨 Discordancia registrada en la bitácora de Supabase.');
+      }
+    } catch (err) {
+      console.error('Error al registrar discordancia:', err);
+    }
+  };
+
+  const handleResponderBitacora = async (id: number, respuesta: string) => {
+    try {
+      const { error } = await supabase.from('bitacora').update({ empleado_respuesta: respuesta, estado: 'JUSTIFICADO' }).eq('id', id);
+      if (!error) {
+        setBitacora(bitacora.map(b => b.id === id ? { ...b, empleadoRespuesta: respuesta, estado: 'JUSTIFICADO' } : b));
+        alert('✅ Justificación guardada en la nube.');
+      }
+    } catch (err) {
+      console.error('Error al responder bitácora:', err);
+    }
+  };
+
+  const handleCerrarObservacion = async (id: number) => {
+    try {
+      const { error } = await supabase.from('bitacora').update({ estado: 'RESUELTO' }).eq('id', id);
+      if (!error) {
+        setBitacora(bitacora.map(b => b.id === id ? { ...b, estado: 'RESUELTO' } : b));
+        alert('🟢 Observación aprobada y caso cerrado.');
+      }
+    } catch (err) {
+      console.error('Error al cerrar observación:', err);
+    }
   };
 
   const handleCierreSemana = () => {
-    if (confirm(`¿Desea cerrar la Semana ${numeroSemanaActual}? Se reiniciará la caja en S/ 0.00.`)) {
+    if (confirm(`¿Desea cerrar la Semana ${numeroSemanaActual}? Se guardará el consolidado.`)) {
       const ingresos = movimientos.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + m.monto, 0);
       const salidas = movimientos.filter(m => m.tipo === 'salida').reduce((acc, m) => acc + m.monto, 0);
 
@@ -156,7 +269,6 @@ export default function App() {
 
       setHistorialSemanas([nuevaSemana, ...historialSemanas]);
       setNumeroSemanaActual(numeroSemanaActual + 1);
-      setMovimientos([]);
       alert(`🔒 Semana ${numeroSemanaActual} cerrada con éxito.`);
     }
   };
@@ -166,7 +278,7 @@ export default function App() {
       <div style={{ minHeight: '100vh', backgroundColor: '#03050c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'sans-serif' }}>
         <form onSubmit={handleLogin} style={{ background: '#080c18', border: '1px solid #3b82f6', borderRadius: '16px', padding: '35px', width: '320px', textAlign: 'center' }}>
           <h2 style={{ color: '#fff', margin: '0 0 5px 0' }}>CHASS IMPORT</h2>
-          <span style={{ color: '#38bdf8', fontSize: '10px', display: 'block', marginBottom: '20px', fontWeight: 'bold' }}>CONTROL DE CAJA</span>
+          <span style={{ color: '#38bdf8', fontSize: '10px', display: 'block', marginBottom: '20px', fontWeight: 'bold' }}>CONTROL DE CAJA (SUPABASE)</span>
           <input type="text" placeholder="Usuario" value={username} onChange={e => setUsername(e.target.value)} required style={{ width: '100%', padding: '10px', marginBottom: '10px', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', boxSizing: 'border-box' }} />
           <input type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} required style={{ width: '100%', padding: '10px', marginBottom: '15px', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', boxSizing: 'border-box' }} />
           <button type="submit" style={{ width: '100%', padding: '10px', background: '#3b82f6', border: 'none', color: '#fff', fontWeight: 'bold', borderRadius: '6px', cursor: 'pointer' }}>INGRESAR</button>
@@ -177,7 +289,7 @@ export default function App() {
 
   const cambiarSeccion = (seccion: string) => {
     setSeccionActiva(seccion);
-    setMenuMovilAbierto(false); // Cierra el menú al seleccionar una opción en celular
+    setMenuMovilAbierto(false);
   };
 
   return (
@@ -185,35 +297,21 @@ export default function App() {
       
       <ModalOperacion movimiento={movimientoModal} onClose={() => setMovimientoModal(null)} />
 
-      {/* BOTÓN FLOTANTE DE 3 RAYITAS (HAMBURGUESA) PARA CELULAR */}
-      <div style={{
-        position: 'fixed', top: '15px', left: '15px', zIndex: 1100,
-        display: 'flex', alignItems: 'center', gap: '10px'
-      }}>
+      {/* BOTÓN FLOTANTE DE 3 RAYITAS PARA CELULAR */}
+      <div style={{ position: 'fixed', top: '15px', left: '15px', zIndex: 1100, display: 'flex', alignItems: 'center', gap: '10px' }}>
         <button 
           onClick={() => setMenuMovilAbierto(!menuMovilAbierto)}
-          style={{
-            background: '#0f172a', border: '1px solid #3b82f6', color: '#fff',
-            padding: '10px 14px', borderRadius: '8px', fontSize: '18px', cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.5)', fontWeight: 'bold'
-          }}
+          style={{ background: '#0f172a', border: '1px solid #3b82f6', color: '#fff', padding: '10px 14px', borderRadius: '8px', fontSize: '18px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', fontWeight: 'bold' }}
         >
           {menuMovilAbierto ? '✕' : '☰'}
         </button>
       </div>
 
-      {/* FONDO OSCURO AL ABRIR EL MENÚ EN CELULAR */}
       {menuMovilAbierto && (
-        <div 
-          onClick={() => setMenuMovilAbierto(false)}
-          style={{
-            position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-            backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 999, backdropFilter: 'blur(3px)'
-          }}
-        />
+        <div onClick={() => setMenuMovilAbierto(false)} style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 999, backdropFilter: 'blur(3px)' }} />
       )}
 
-      {/* BARRA LATERAL (COLAPSIBLE / DESPLEGABLE) */}
+      {/* BARRA LATERAL */}
       <aside style={{ 
         position: 'fixed', top: 0, left: menuMovilAbierto ? 0 : '-300px', width: '280px', height: '100vh',
         backgroundColor: '#060912', borderRight: '1px solid rgba(59, 130, 246, 0.2)', padding: '25px 20px', 
@@ -224,7 +322,7 @@ export default function App() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', marginTop: '35px' }}>
             <div>
               <h2 style={{ margin: 0, fontSize: '20px', color: '#ffffff' }}>CHASS IMPORT</h2>
-              <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: 'bold', display: 'block' }}>SEMANA {numeroSemanaActual} ACTIVA</span>
+              <span style={{ fontSize: '10px', color: '#22c55e', fontWeight: 'bold', display: 'block' }}>☁️ SUPABASE CONECTADO</span>
             </div>
           </div>
 
@@ -260,7 +358,7 @@ export default function App() {
         </div>
       </aside>
 
-      {/* ÁREA PRINCIPAL (OCUPA EL 100% DE LA PANTALLA CON UN PEQUEÑO MARGEN SUPERIOR PARA EL BOTÓN) */}
+      {/* ÁREA PRINCIPAL */}
       <main style={{ flex: 1, padding: '75px 20px 25px 20px', overflowY: 'auto', boxSizing: 'border-box', width: '100%' }}>
         {seccionActiva === 'inicio' && <SeccionInicio role={role} numeroSemanaActual={numeroSemanaActual} movimientos={movimientos} onCierreSemana={handleCierreSemana} onRegistrarDiscordancia={handleRegistrarDiscordancia} />}
         {seccionActiva === 'entradas' && <SeccionEntradas role={role} nombreUsuario={nombreUsuario} movimientos={movimientos} clientes={clientes} onRegistrarIngreso={handleAgregarMovimiento} onAbrirModal={m => setMovimientoModal(m)} />}
