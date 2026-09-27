@@ -1,5 +1,5 @@
 // src/components/SeccionEntradas.tsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 interface Props {
   role: 'ADMIN' | 'TRABAJADOR';
@@ -64,7 +64,6 @@ export default function SeccionEntradas({ role, nombreUsuario, movimientos, clie
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {role === 'ADMIN' ? (
-        /* VISTA ADMINISTRADOR: MONITOREO Y AUDITORÍA */
         <div style={{ background: 'rgba(8, 12, 24, 0.9)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '20px', padding: '25px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
             <div>
@@ -96,7 +95,7 @@ export default function SeccionEntradas({ role, nombreUsuario, movimientos, clie
                     <td style={{ padding: '10px', color: '#94a3b8' }}>{m.fecha}<br/><small>{m.hora}</small></td>
                     <td style={{ padding: '10px' }}>{m.tipoVenta}</td>
                     <td style={{ padding: '10px', color: '#fff', fontWeight: 'bold' }}>{m.cliente}</td>
-                    <td style={{ padding: '10px' }}><strong style={{ color: '#38bdf8' }}>{m.modeloIphone}</strong><br/>{m.tipoCase}</td>
+                    <td style={{ padding: '10px' }}><strong style={{ color: '#38bdf8' }}>{m.modeloIphone}</strong><br/>{m.tipoCase} (x{m.cantidad || 1})</td>
                     <td style={{ padding: '10px' }}>{m.metodoPago}</td>
                     <td style={{ padding: '10px' }}>
                       {m.numOperacion && m.numOperacion !== '-' ? (
@@ -114,7 +113,6 @@ export default function SeccionEntradas({ role, nombreUsuario, movimientos, clie
           </div>
         </div>
       ) : (
-        /* VISTA TRABAJADOR: FORMULARIO DE REGISTRO */
         <div style={{ background: 'rgba(8, 12, 24, 0.9)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '20px', padding: '25px' }}>
           <h2 style={{ color: '#4ade80', margin: '0 0 5px 0', fontSize: '20px' }}>🟢 REGISTRAR NUEVA VENTA / INGRESO</h2>
           <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '20px' }}>Complete los datos para ingresar la venta a caja.</p>
@@ -164,6 +162,17 @@ export default function SeccionEntradas({ role, nombreUsuario, movimientos, clie
                 <option value="Silicona Case">Silicona Case</option>
                 <option value="Antigolpe Reforzado">Antigolpe Reforzado</option>
               </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '11px', color: '#38bdf8', marginBottom: '6px', fontWeight: 'bold' }}>📦 CANTIDAD</label>
+              <input 
+                type="number" 
+                min="1" 
+                value={cantidadCases} 
+                onChange={(e) => setCantidadCases(parseInt(e.target.value) || 1)} 
+                style={{ width: '100%', padding: '11px', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '8px', fontSize: '13px', boxSizing: 'border-box' }} 
+              />
             </div>
 
             <div>

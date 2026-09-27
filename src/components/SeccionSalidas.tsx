@@ -1,5 +1,5 @@
 // src/components/SeccionSalidas.tsx
-import React, { useState } from 'react';
+import  { useState } from 'react';
 
 interface Props {
   role: 'ADMIN' | 'TRABAJADOR';
