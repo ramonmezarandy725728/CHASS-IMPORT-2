@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CHASS IMPORT - Control de Caja</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- PANTALLA DE LOGIN -->
+  <div id="login-screen" class="screen">
+    <div class="login-box">
+      <h2>CHASS IMPORT</h2>
+      <p>SISTEMA TÁCTICO DE CAJA</p>
+      <form id="login-form">
+        <input type="text" id="login-user" placeholder="Usuario (randy / maria)" required>
+        <input type="password" id="login-pass" placeholder="Contraseña" required>
+        <button type="submit" class="btn btn-primary">INGRESAR AL SISTEMA</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- PANTALLA PRINCIPAL -->
+  <div id="app-screen" class="screen hidden">
+    <aside class="sidebar">
+      <div class="brand">
+        <h2>CHASS IMPORT</h2>
+        <span id="role-badge" class="badge">ROL</span>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-btn active" data-target="caja">🏢 1. Inicio — Caja</button>
+        <button class="nav-btn" data-target="entradas">🟢 2. Entradas</button>
+        <button class="nav-btn" data-target="salidas">🔴 3. Salidas</button>
+        <button class="nav-btn" data-target="clientes">👥 4. Clientes</button>
+        <button class="nav-btn admin-only" data-target="historial">📅 5. Historial Semanas</button>
+      </nav>
+
+      <div class="user-footer">
+        <span id="user-display">Usuario</span>
+        <button id="btn-logout" class="btn-logout">Cerrar Sesión</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <!-- 1. VISTA CAJA -->
+      <section id="sec-caja" class="view-sec active">
+        <div class="card card-caja">
+          <div class="header-caja">
+            <h2>RESUMEN DE CAJA SEMANAL</h2>
+            <button id="btn-cierre" class="btn btn-danger admin-only">🔒 CIERRE DE SEMANA (S/ 0.00)</button>
+          </div>
+          <div class="display-dinero">
+            <span>DINERO ACTUAL EN CAJA</span>
+            <h1 id="monto-caja">S/ 0.00</h1>
+          </div>
+          <div class="grid-stats">
+            <div class="stat-box"><span>INGRESOS</span><h3 id="stat-ingresos">S/ 0.00</h3></div>
+            <div class="stat-box"><span>SALIDAS</span><h3 id="stat-salidas">S/ 0.00</h3></div>
+            <div class="stat-box"><span>BALANCE</span><h3 id="stat-balance">S/ 0.00</h3></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. VISTA ENTRADAS -->
+      <section id="sec-entradas" class="view-sec">
+        <div class="card">
+          <h2>🟢 REGISTRAR ENTRADA DE DINERO</h2>
+          <form id="form-ingreso">
+            <label>Cliente</label>
+            <select id="select-cliente-ingreso" class="input-field"></select>
+
+            <label>Detalle / Concepto (Ej. Venta Case Magsafe)</label>
+            <input type="text" id="ingreso-concepto" class="input-field" required>
+
+            <label>Monto (S/)</label>
+            <input type="number" step="0.01" id="ingreso-monto" class="input-field" required>
+
+            <button type="submit" class="btn btn-success">REGISTRAR INGRESO</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- 3. VISTA SALIDAS -->
+      <section id="sec-salidas" class="view-sec">
+        <div class="card">
+          <h2>🔴 REGISTRAR SALIDA / GASTO</h2>
+          <form id="form-salida">
+            <label>Motivo</label>
+            <select id="salida-motivo" class="input-field">
+              <option value="Mercadería">📦 Compra Mercadería / Cases</option>
+              <option value="Delivery">🛵 Delivery</option>
+              <option value="Movilidad">🚕 Movilidad / Pasajes</option>
+            </select>
+
+            <label>Descripción / Detalle</label>
+            <input type="text" id="salida-concepto" class="input-field" required>
+
+            <label>Monto (S/)</label>
+            <input type="number" step="0.01" id="salida-monto" class="input-field" required>
+
+            <button type="submit" class="btn btn-danger">REGISTRAR SALIDA</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- 4. VISTA CLIENTES -->
+      <section id="sec-clientes" class="view-sec">
+        <div class="card">
+          <h2>👥 REGISTRAR CLIENTE</h2>
+          <form id="form-cliente" class="grid-form">
+            <input type="text" id="cliente-nombre" placeholder="Nombre completo" class="input-field" required>
+            <input type="text" id="cliente-dni" placeholder="DNI / RUC" class="input-field">
+            <input type="text" id="cliente-tel" placeholder="Teléfono" class="input-field">
+            <button type="submit" class="btn btn-primary span-2">GUARDAR CLIENTE</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- 5. VISTA HISTORIAL (ADMIN) -->
+      <section id="sec-historial" class="view-sec">
+        <div class="card">
+          <h2>📅 HISTORIAL DE SEMANAS PASADAS</h2>
+          <div id="historial-lista"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
