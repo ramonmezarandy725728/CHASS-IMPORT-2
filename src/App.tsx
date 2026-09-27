@@ -1,4 +1,4 @@
-// src/App.tsx - CHASS IMPORT CON SUPABASE & RESPONSIVE
+// src/App.tsx - CHASS IMPORT CON SUPABASE & ELIMINAR MOVIMIENTOS Y SEMANAS
 import { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
 import ModalOperacion from './components/ModalOperacion';
@@ -141,6 +141,27 @@ export default function App() {
     } catch (err) {
       console.error('Excepción al registrar movimiento:', err);
     }
+  };
+
+  // ELIMINAR MOVIMIENTO (SOLO ADMIN)
+  const handleEliminarMovimiento = async (id: number) => {
+    try {
+      const { error } = await supabase.from('movimientos').delete().eq('id', id);
+      if (error) {
+        alert('⚠️ Error al eliminar en Supabase: ' + error.message);
+        return;
+      }
+      setMovimientos(movimientos.filter(m => m.id !== id));
+      alert('🗑️ Registro eliminado correctamente de la base de datos.');
+    } catch (err) {
+      console.error('Excepción al eliminar movimiento:', err);
+    }
+  };
+
+  // ELIMINAR SEMANA DEL HISTORIAL (SOLO ADMIN)
+  const handleEliminarSemana = (numeroSemana: number) => {
+    setHistorialSemanas(historialSemanas.filter(s => s.numeroSemana !== numeroSemana));
+    alert(`🗑️ El historial de la Semana ${numeroSemana} fue eliminado.`);
   };
 
   // AGREGAR CLIENTE
@@ -361,7 +382,17 @@ export default function App() {
       {/* ÁREA PRINCIPAL */}
       <main style={{ flex: 1, padding: '75px 20px 25px 20px', overflowY: 'auto', boxSizing: 'border-box', width: '100%' }}>
         {seccionActiva === 'inicio' && <SeccionInicio role={role} numeroSemanaActual={numeroSemanaActual} movimientos={movimientos} onCierreSemana={handleCierreSemana} onRegistrarDiscordancia={handleRegistrarDiscordancia} />}
-        {seccionActiva === 'entradas' && <SeccionEntradas role={role} nombreUsuario={nombreUsuario} movimientos={movimientos} clientes={clientes} onRegistrarIngreso={handleAgregarMovimiento} onAbrirModal={m => setMovimientoModal(m)} />}
+        {seccionActiva === 'entradas' && (
+          <SeccionEntradas 
+            role={role} 
+            nombreUsuario={nombreUsuario} 
+            movimientos={movimientos} 
+            clientes={clientes} 
+            onRegistrarIngreso={handleAgregarMovimiento} 
+            onAbrirModal={m => setMovimientoModal(m)} 
+            onEliminarMovimiento={handleEliminarMovimiento}
+          />
+        )}
         {seccionActiva === 'salidas' && <SeccionSalidas role={role} nombreUsuario={nombreUsuario} movimientos={movimientos} onRegistrarSalida={handleAgregarMovimiento} />}
         {seccionActiva === 'clientes' && (
           <SeccionClientes 
@@ -371,7 +402,12 @@ export default function App() {
             onEliminarCliente={handleEliminarCliente}
           />
         )}
-        {seccionActiva === 'registros' && role === 'ADMIN' && <SeccionHistorial historialSemanas={historialSemanas} />}
+        {seccionActiva === 'registros' && role === 'ADMIN' && (
+          <SeccionHistorial 
+            historialSemanas={historialSemanas} 
+            onEliminarSemana={handleEliminarSemana}
+          />
+        )}
         {seccionActiva === 'bitacora' && (
           <SeccionBitacora 
             role={role} 
