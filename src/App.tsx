@@ -1,5 +1,5 @@
-// src/App.tsx - CHASS IMPORT CON NUMERACIÓN DINÁMICA DE MENÚ
-import React, { useState } from 'react';
+// src/App.tsx - CHASS IMPORT CON MENÚ RESPONSIVE (3 RAYITAS)
+import { useState } from 'react';
 import ModalOperacion from './components/ModalOperacion';
 import SeccionInicio from './components/SeccionInicio';
 import SeccionEntradas from './components/SeccionEntradas';
@@ -18,6 +18,9 @@ export default function App() {
   const [seccionActiva, setSeccionActiva] = useState<string>('entradas');
   const [numeroSemanaActual, setNumeroSemanaActual] = useState<number>(4);
   const [movimientoModal, setMovimientoModal] = useState<any | null>(null);
+
+  // ESTADO PARA CONTROLAR EL MENÚ DESPLEGABLE EN CELULAR (3 RAYITAS)
+  const [menuMovilAbierto, setMenuMovilAbierto] = useState<boolean>(false);
 
   // BASE DE DATOS LOCAL EN VIVO
   const [movimientos, setMovimientos] = useState<any[]>([
@@ -172,38 +175,80 @@ export default function App() {
     );
   }
 
+  const cambiarSeccion = (seccion: string) => {
+    setSeccionActiva(seccion);
+    setMenuMovilAbierto(false); // Cierra el menú al seleccionar una opción en celular
+  };
+
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', minHeight: '100vh', backgroundColor: '#03050c', color: '#f8fafc', fontFamily: 'sans-serif' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#03050c', color: '#f8fafc', fontFamily: 'sans-serif', position: 'relative' }}>
       
       <ModalOperacion movimiento={movimientoModal} onClose={() => setMovimientoModal(null)} />
 
-      {/* BARRA LATERAL CON NUMERACIÓN DINÁMICA SEGÚN EL ROL */}
-      <aside style={{ width: '100%', maxWidth: '280px', backgroundColor: '#060912', borderRight: '1px solid rgba(59, 130, 246, 0.2)', padding: '25px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
+      {/* BOTÓN FLOTANTE DE 3 RAYITAS (HAMBURGUESA) PARA CELULAR */}
+      <div style={{
+        position: 'fixed', top: '15px', left: '15px', zIndex: 1100,
+        display: 'flex', alignItems: 'center', gap: '10px'
+      }}>
+        <button 
+          onClick={() => setMenuMovilAbierto(!menuMovilAbierto)}
+          style={{
+            background: '#0f172a', border: '1px solid #3b82f6', color: '#fff',
+            padding: '10px 14px', borderRadius: '8px', fontSize: '18px', cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.5)', fontWeight: 'bold'
+          }}
+        >
+          {menuMovilAbierto ? '✕' : '☰'}
+        </button>
+      </div>
+
+      {/* FONDO OSCURO AL ABRIR EL MENÚ EN CELULAR */}
+      {menuMovilAbierto && (
+        <div 
+          onClick={() => setMenuMovilAbierto(false)}
+          style={{
+            position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+            backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 999, backdropFilter: 'blur(3px)'
+          }}
+        />
+      )}
+
+      {/* BARRA LATERAL (COLAPSIBLE / DESPLEGABLE) */}
+      <aside style={{ 
+        position: 'fixed', top: 0, left: menuMovilAbierto ? 0 : '-300px', width: '280px', height: '100vh',
+        backgroundColor: '#060912', borderRight: '1px solid rgba(59, 130, 246, 0.2)', padding: '25px 20px', 
+        display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box',
+        zIndex: 1000, transition: 'left 0.3s ease-in-out', boxShadow: menuMovilAbierto ? '5px 0 25px rgba(0,0,0,0.8)' : 'none'
+      }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '22px', color: '#ffffff' }}>CHASS IMPORT</h2>
-          <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: 'bold', display: 'block', marginBottom: '20px' }}>SEMANA {numeroSemanaActual} ACTIVA</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', marginTop: '35px' }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '20px', color: '#ffffff' }}>CHASS IMPORT</h2>
+              <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: 'bold', display: 'block' }}>SEMANA {numeroSemanaActual} ACTIVA</span>
+            </div>
+          </div>
 
           <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <button onClick={() => setSeccionActiva('inicio')} style={{ padding: '12px', background: seccionActiva === 'inicio' ? 'rgba(239, 68, 68, 0.2)' : 'transparent', border: seccionActiva === 'inicio' ? '1px solid #ef4444' : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
+            <button onClick={() => cambiarSeccion('inicio')} style={{ padding: '12px', background: seccionActiva === 'inicio' ? 'rgba(239, 68, 68, 0.2)' : 'transparent', border: seccionActiva === 'inicio' ? '1px solid #ef4444' : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
               🏢 1. Inicio — Caja
             </button>
-            <button onClick={() => setSeccionActiva('entradas')} style={{ padding: '12px', background: seccionActiva === 'entradas' ? 'rgba(239, 68, 68, 0.2)' : 'transparent', border: seccionActiva === 'entradas' ? '1px solid #ef4444' : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
+            <button onClick={() => cambiarSeccion('entradas')} style={{ padding: '12px', background: seccionActiva === 'entradas' ? 'rgba(239, 68, 68, 0.2)' : 'transparent', border: seccionActiva === 'entradas' ? '1px solid #ef4444' : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
               🟢 2. Entradas {role === 'ADMIN' ? '(Monitoreo)' : '(Registro)'}
             </button>
-            <button onClick={() => setSeccionActiva('salidas')} style={{ padding: '12px', background: seccionActiva === 'salidas' ? 'rgba(239, 68, 68, 0.2)' : 'transparent', border: seccionActiva === 'salidas' ? '1px solid #ef4444' : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
+            <button onClick={() => cambiarSeccion('salidas')} style={{ padding: '12px', background: seccionActiva === 'salidas' ? 'rgba(239, 68, 68, 0.2)' : 'transparent', border: seccionActiva === 'salidas' ? '1px solid #ef4444' : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
               🔴 3. Salidas {role === 'ADMIN' ? '(Monitoreo)' : '(Registro)'}
             </button>
-            <button onClick={() => setSeccionActiva('clientes')} style={{ padding: '12px', background: seccionActiva === 'clientes' ? 'rgba(239, 68, 68, 0.2)' : 'transparent', border: seccionActiva === 'clientes' ? '1px solid #ef4444' : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
+            <button onClick={() => cambiarSeccion('clientes')} style={{ padding: '12px', background: seccionActiva === 'clientes' ? 'rgba(239, 68, 68, 0.2)' : 'transparent', border: seccionActiva === 'clientes' ? '1px solid #ef4444' : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
               👥 4. Clientes / Puntos
             </button>
             
             {role === 'ADMIN' && (
-              <button onClick={() => setSeccionActiva('registros')} style={{ padding: '12px', background: seccionActiva === 'registros' ? 'rgba(239, 68, 68, 0.2)' : 'transparent', border: seccionActiva === 'registros' ? '1px solid #ef4444' : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
+              <button onClick={() => cambiarSeccion('registros')} style={{ padding: '12px', background: seccionActiva === 'registros' ? 'rgba(239, 68, 68, 0.2)' : 'transparent', border: seccionActiva === 'registros' ? '1px solid #ef4444' : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
                 📅 5. Historial Semanas
               </button>
             )}
 
-            <button onClick={() => setSeccionActiva('bitacora')} style={{ padding: '12px', background: seccionActiva === 'bitacora' ? 'rgba(239, 68, 68, 0.2)' : 'transparent', border: seccionActiva === 'bitacora' ? '1px solid #ef4444' : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
+            <button onClick={() => cambiarSeccion('bitacora')} style={{ padding: '12px', background: seccionActiva === 'bitacora' ? 'rgba(239, 68, 68, 0.2)' : 'transparent', border: seccionActiva === 'bitacora' ? '1px solid #ef4444' : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
               📝 {role === 'ADMIN' ? '6. Bitácora & Descargos' : '5. Bitácora & Descargos'}
             </button>
           </nav>
@@ -215,8 +260,8 @@ export default function App() {
         </div>
       </aside>
 
-      {/* ÁREA PRINCIPAL */}
-      <main style={{ flex: 1, padding: '25px', overflowY: 'auto', boxSizing: 'border-box' }}>
+      {/* ÁREA PRINCIPAL (OCUPA EL 100% DE LA PANTALLA CON UN PEQUEÑO MARGEN SUPERIOR PARA EL BOTÓN) */}
+      <main style={{ flex: 1, padding: '75px 20px 25px 20px', overflowY: 'auto', boxSizing: 'border-box', width: '100%' }}>
         {seccionActiva === 'inicio' && <SeccionInicio role={role} numeroSemanaActual={numeroSemanaActual} movimientos={movimientos} onCierreSemana={handleCierreSemana} onRegistrarDiscordancia={handleRegistrarDiscordancia} />}
         {seccionActiva === 'entradas' && <SeccionEntradas role={role} nombreUsuario={nombreUsuario} movimientos={movimientos} clientes={clientes} onRegistrarIngreso={handleAgregarMovimiento} onAbrirModal={m => setMovimientoModal(m)} />}
         {seccionActiva === 'salidas' && <SeccionSalidas role={role} nombreUsuario={nombreUsuario} movimientos={movimientos} onRegistrarSalida={handleAgregarMovimiento} />}
