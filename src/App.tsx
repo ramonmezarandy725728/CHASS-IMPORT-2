@@ -17,7 +17,13 @@ export default function App() {
   const [nombreUsuario, setNombreUsuario] = useState<string>('Jazmin');
 
   const [seccionActiva, setSeccionActiva] = useState<string>('entradas');
-  const [numeroSemanaActual, setNumeroSemanaActual] = useState<number>(4);
+  
+  // SEMANA ACTUAL MEMORIZADA (Inicia en 1 si no hay registro previo)
+  const [numeroSemanaActual, setNumeroSemanaActual] = useState<number>(() => {
+    const semanaGuardada = localStorage.getItem('chass_semana_actual');
+    return semanaGuardada ? parseInt(semanaGuardada) : 1;
+  });
+
   const [movimientoModal, setMovimientoModal] = useState<any | null>(null);
   const [menuMovilAbierto, setMenuMovilAbierto] = useState<boolean>(false);
 
@@ -28,7 +34,7 @@ export default function App() {
   
   const [historialSemanas, setHistorialSemanas] = useState<any[]>([
     {
-      numeroSemana: 3,
+      numeroSemana: 1,
       fechaCierre: '20/09/2026',
       ingresos: 1250.00,
       salidas: 280.00,
@@ -249,7 +255,7 @@ export default function App() {
         setClientes(clientes.filter(c => c.id !== id));
       }
     } catch (err) {
-      console.error('Excepción al eliminar cliente:', err);
+      console.error('Error al eliminar cliente:', err);
     }
   };
 
@@ -291,7 +297,7 @@ export default function App() {
         alert('✅ Justificación guardada en la nube.');
       }
     } catch (err) {
-      console.error('Excepción al responder bitácora:', err);
+      console.error('Error al responder bitácora:', err);
     }
   };
 
@@ -308,7 +314,7 @@ export default function App() {
   };
 
   const handleCierreSemana = () => {
-    if (confirm(`¿Desea cerrar la Semana ${numeroSemanaActual}? Se guardará el consolidado.`)) {
+    if (confirm(`¿Desea cerrar la Semana ${numeroSemanaActual}? Se guardará el consolidado y avanzará a la siguiente semana.`)) {
       const ingresos = movimientos.filter(m => m.tipo === 'ingreso').reduce((acc, m) => acc + m.monto, 0);
       const salidas = movimientos.filter(m => m.tipo === 'salida').reduce((acc, m) => acc + m.monto, 0);
 
@@ -321,15 +327,18 @@ export default function App() {
         movimientos: [...movimientos]
       };
 
+      const siguienteSemana = numeroSemanaActual + 1;
       setHistorialSemanas([nuevaSemana, ...historialSemanas]);
-      setNumeroSemanaActual(numeroSemanaActual + 1);
-      alert(`🔒 Semana ${numeroSemanaActual} cerrada con éxito.`);
+      setNumeroSemanaActual(siguienteSemana);
+      localStorage.setItem('chass_semana_actual', siguienteSemana.toString());
+
+      alert(`🔒 Semana ${numeroSemanaActual} cerrada con éxito. ¡Comienza la Semana ${siguienteSemana}!`);
     }
   };
 
   // VARIABLES DE TEMA DINÁMICO (FONDO, CONTORNO Y ACENTOS)
   const esAdmin = role === 'ADMIN';
-  const colorFondoApp = esAdmin ? '#03050c' : '#1a0d16';             // Fondo general oscuro para Admin / Rosado muy oscuro/elegante para Jazmin
+  const colorFondoApp = esAdmin ? '#03050c' : '#1a0d16';              // Fondo general oscuro para Admin / Rosado muy oscuro/elegante para Jazmin
   const colorFondoSidebar = esAdmin ? '#060912' : '#22111d';        // Fondo barra lateral
   const colorPrimario = esAdmin ? '#3b82f6' : '#ec4899';            // Azul Admin / Rosado Trabajadora
   const colorBorde = esAdmin ? 'rgba(59, 130, 246, 0.3)' : 'rgba(236, 72, 153, 0.4)'; // Contornos
