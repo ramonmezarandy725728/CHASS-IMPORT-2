@@ -1,4 +1,4 @@
-// src/App.tsx - CHASS IMPORT CON SUPABASE & ELIMINAR MOVIMIENTOS Y SEMANAS
+// src/App.tsx - CHASS IMPORT CON TEMA DE FONDO Y CONTORNO ROSADO PARA TRABAJADOR
 import { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
 import ModalOperacion from './components/ModalOperacion';
@@ -10,11 +10,11 @@ import SeccionHistorial from './components/SeccionHistorial';
 import SeccionBitacora from './components/SeccionBitacora';
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false); 
   const [username, setUsername] = useState<string>('randy');
   const [password, setPassword] = useState<string>('');
   const [role, setRole] = useState<'ADMIN' | 'TRABAJADOR'>('TRABAJADOR');
-  const [nombreUsuario, setNombreUsuario] = useState<string>('María');
+  const [nombreUsuario, setNombreUsuario] = useState<string>('Jazmin');
 
   const [seccionActiva, setSeccionActiva] = useState<string>('entradas');
   const [numeroSemanaActual, setNumeroSemanaActual] = useState<number>(4);
@@ -44,7 +44,6 @@ export default function App() {
 
   const cargarDatosSupabase = async () => {
     try {
-      // 1. Cargar Movimientos
       const { data: movData, error: movError } = await supabase.from('movimientos').select('*').order('id', { ascending: false });
       if (!movError && movData) {
         setMovimientos(movData.map(m => ({
@@ -58,7 +57,6 @@ export default function App() {
         })));
       }
 
-      // 2. Cargar Clientes
       const { data: cliData, error: cliError } = await supabase.from('clientes').select('*').order('id', { ascending: false });
       if (!cliError && cliData) {
         setClientes(cliData.map(c => ({
@@ -67,7 +65,6 @@ export default function App() {
         })));
       }
 
-      // 3. Cargar Bitácora
       const { data: bitData, error: bitError } = await supabase.from('bitacora').select('*').order('id', { ascending: false });
       if (!bitError && bitData) {
         setBitacora(bitData.map(b => ({
@@ -84,15 +81,23 @@ export default function App() {
     }
   };
 
-  // AUTENTICACIÓN
+  // AUTENTICACIÓN FLEXIBLE
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (username.toLowerCase() === 'randy' && password === 'admin123') {
-      setRole('ADMIN'); setNombreUsuario('Randy Ramon Meza'); setIsAuthenticated(true);
-    } else if (username.toLowerCase() === 'maria' && password === 'maria123') {
-      setRole('TRABAJADOR'); setNombreUsuario('María'); setIsAuthenticated(true);
+    const userTrim = username.trim();
+    const passTrim = password.trim();
+
+    if ((userTrim === 'randy' || userTrim === 'Randy') && (passTrim === 'admin123' || passTrim === 'Admin123')) {
+      setRole('ADMIN'); 
+      setNombreUsuario('Randy Ramon Meza'); 
+      setIsAuthenticated(true);
+    } 
+    else if ((userTrim === 'jazmin' || userTrim === 'Jazmin') && (passTrim === 'jefa123' || passTrim === 'Jefa123')) {
+      setRole('TRABAJADOR'); 
+      setNombreUsuario('Jazmin Flores Pasache'); 
+      setIsAuthenticated(true);
     } else {
-      alert('⚠️ Credenciales incorrectas.');
+      alert('⚠️ Credenciales incorrectas. Verifique su usuario y contraseña.');
     }
   };
 
@@ -100,7 +105,6 @@ export default function App() {
     setIsAuthenticated(false); setUsername(''); setPassword('');
   };
 
-  // AGREGAR MOVIMIENTO (ENTRADA / SALIDA)
   const handleAgregarMovimiento = async (nuevo: any) => {
     try {
       const objetoDB = {
@@ -143,7 +147,6 @@ export default function App() {
     }
   };
 
-  // ELIMINAR MOVIMIENTO (SOLO ADMIN)
   const handleEliminarMovimiento = async (id: number) => {
     try {
       const { error } = await supabase.from('movimientos').delete().eq('id', id);
@@ -158,13 +161,43 @@ export default function App() {
     }
   };
 
-  // ELIMINAR SEMANA DEL HISTORIAL (SOLO ADMIN)
+  const handleEditarMovimiento = async (id: number, actualizado: any) => {
+    try {
+      const objetoDB = {
+        tipo: actualizado.tipo,
+        tipo_venta: actualizado.tipoVenta || null,
+        cliente: actualizado.cliente || null,
+        modelo_iphone: actualizado.modeloIphone || null,
+        tipo_case: actualizado.tipoCase || null,
+        cantidad: actualizado.cantidad || null,
+        categoria_gasto: actualizado.categoriaGasto || null,
+        concepto: actualizado.concepto,
+        monto: actualizado.monto,
+        metodo_pago: actualizado.metodoPago,
+        num_operacion: actualizado.numOperacion || null,
+        usuario: actualizado.usuario,
+        fecha: actualizado.fecha,
+        hora: actualizado.hora
+      };
+
+      const { error } = await supabase.from('movimientos').update(objetoDB).eq('id', id);
+      if (error) {
+        alert('⚠️ Error al actualizar en Supabase: ' + error.message);
+        return;
+      }
+
+      setMovimientos(movimientos.map(m => m.id === id ? { ...m, ...actualizado, id } : m));
+      alert('✅ Registro actualizado con éxito.');
+    } catch (err) {
+      console.error('Excepción al editar movimiento:', err);
+    }
+  };
+
   const handleEliminarSemana = (numeroSemana: number) => {
     setHistorialSemanas(historialSemanas.filter(s => s.numeroSemana !== numeroSemana));
     alert(`🗑️ El historial de la Semana ${numeroSemana} fue eliminado.`);
   };
 
-  // AGREGAR CLIENTE
   const handleAgregarCliente = async (nuevo: any) => {
     try {
       const objetoDB = {
@@ -216,7 +249,7 @@ export default function App() {
         setClientes(clientes.filter(c => c.id !== id));
       }
     } catch (err) {
-      console.error('Error al eliminar cliente:', err);
+      console.error('Excepción al eliminar cliente:', err);
     }
   };
 
@@ -229,7 +262,7 @@ export default function App() {
         admin_nota: nota || 'Se requiere revisión del efectivo en caja.',
         empleado_respuesta: '',
         estado: 'PENDIENTE',
-        empleado_nombre: 'María'
+        empleado_nombre: 'Jazmin'
       };
 
       const { data, error } = await supabase.from('bitacora').insert([objetoDB]).select();
@@ -246,7 +279,7 @@ export default function App() {
         alert('🚨 Discordancia registrada en la bitácora de Supabase.');
       }
     } catch (err) {
-      console.error('Error al registrar discordancia:', err);
+      console.error('Excepción al registrar discordancia:', err);
     }
   };
 
@@ -258,7 +291,7 @@ export default function App() {
         alert('✅ Justificación guardada en la nube.');
       }
     } catch (err) {
-      console.error('Error al responder bitácora:', err);
+      console.error('Excepción al responder bitácora:', err);
     }
   };
 
@@ -294,15 +327,23 @@ export default function App() {
     }
   };
 
+  // VARIABLES DE TEMA DINÁMICO (FONDO, CONTORNO Y ACENTOS)
+  const esAdmin = role === 'ADMIN';
+  const colorFondoApp = esAdmin ? '#03050c' : '#1a0d16';             // Fondo general oscuro para Admin / Rosado muy oscuro/elegante para Jazmin
+  const colorFondoSidebar = esAdmin ? '#060912' : '#22111d';        // Fondo barra lateral
+  const colorPrimario = esAdmin ? '#3b82f6' : '#ec4899';            // Azul Admin / Rosado Trabajadora
+  const colorBorde = esAdmin ? 'rgba(59, 130, 246, 0.3)' : 'rgba(236, 72, 153, 0.4)'; // Contornos
+  const colorTextoResaltado = esAdmin ? '#38bdf8' : '#f472b6';
+
   if (!isAuthenticated) {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: '#03050c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'sans-serif' }}>
-        <form onSubmit={handleLogin} style={{ background: '#080c18', border: '1px solid #3b82f6', borderRadius: '16px', padding: '35px', width: '320px', textAlign: 'center' }}>
+        <form onSubmit={handleLogin} style={{ background: '#080c18', border: '1px solid #ec4899', borderRadius: '16px', padding: '35px', width: '320px', textAlign: 'center', boxShadow: '0 8px 30px rgba(236, 72, 153, 0.15)' }}>
           <h2 style={{ color: '#fff', margin: '0 0 5px 0' }}>CHASS IMPORT</h2>
-          <span style={{ color: '#38bdf8', fontSize: '10px', display: 'block', marginBottom: '20px', fontWeight: 'bold' }}>CONTROL DE CAJA (SUPABASE)</span>
-          <input type="text" placeholder="Usuario" value={username} onChange={e => setUsername(e.target.value)} required style={{ width: '100%', padding: '10px', marginBottom: '10px', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', boxSizing: 'border-box' }} />
+          <span style={{ color: '#f472b6', fontSize: '10px', display: 'block', marginBottom: '20px', fontWeight: 'bold' }}>CONTROL DE CAJA Y VENTAS</span>
+          <input type="text" placeholder="Usuario (randy / jazmin)" value={username} onChange={e => setUsername(e.target.value)} required style={{ width: '100%', padding: '10px', marginBottom: '10px', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', boxSizing: 'border-box' }} />
           <input type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} required style={{ width: '100%', padding: '10px', marginBottom: '15px', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', boxSizing: 'border-box' }} />
-          <button type="submit" style={{ width: '100%', padding: '10px', background: '#3b82f6', border: 'none', color: '#fff', fontWeight: 'bold', borderRadius: '6px', cursor: 'pointer' }}>INGRESAR</button>
+          <button type="submit" style={{ width: '100%', padding: '10px', background: '#ec4899', border: 'none', color: '#fff', fontWeight: 'bold', borderRadius: '6px', cursor: 'pointer' }}>INGRESAR AL SISTEMA</button>
         </form>
       </div>
     );
@@ -314,7 +355,7 @@ export default function App() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#03050c', color: '#f8fafc', fontFamily: 'sans-serif', position: 'relative' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: colorFondoApp, color: '#f8fafc', fontFamily: 'sans-serif', position: 'relative', transition: 'background-color 0.4s ease' }}>
       
       <ModalOperacion movimiento={movimientoModal} onClose={() => setMovimientoModal(null)} />
 
@@ -322,7 +363,7 @@ export default function App() {
       <div style={{ position: 'fixed', top: '15px', left: '15px', zIndex: 1100, display: 'flex', alignItems: 'center', gap: '10px' }}>
         <button 
           onClick={() => setMenuMovilAbierto(!menuMovilAbierto)}
-          style={{ background: '#0f172a', border: '1px solid #3b82f6', color: '#fff', padding: '10px 14px', borderRadius: '8px', fontSize: '18px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', fontWeight: 'bold' }}
+          style={{ background: colorFondoSidebar, border: `1px solid ${colorPrimario}`, color: '#fff', padding: '10px 14px', borderRadius: '8px', fontSize: '18px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', fontWeight: 'bold' }}
         >
           {menuMovilAbierto ? '✕' : '☰'}
         </button>
@@ -332,50 +373,52 @@ export default function App() {
         <div onClick={() => setMenuMovilAbierto(false)} style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 999, backdropFilter: 'blur(3px)' }} />
       )}
 
-      {/* BARRA LATERAL */}
+      {/* BARRA LATERAL CON FONDO Y CONTORNO ROSADO */}
       <aside style={{ 
         position: 'fixed', top: 0, left: menuMovilAbierto ? 0 : '-300px', width: '280px', height: '100vh',
-        backgroundColor: '#060912', borderRight: '1px solid rgba(59, 130, 246, 0.2)', padding: '25px 20px', 
+        backgroundColor: colorFondoSidebar, borderRight: `1px solid ${colorBorde}`, padding: '25px 20px', 
         display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box',
-        zIndex: 1000, transition: 'left 0.3s ease-in-out', boxShadow: menuMovilAbierto ? '5px 0 25px rgba(0,0,0,0.8)' : 'none'
+        zIndex: 1000, transition: 'left 0.3s ease-in-out, background-color 0.4s ease', boxShadow: menuMovilAbierto ? '5px 0 25px rgba(0,0,0,0.8)' : 'none'
       }}>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', marginTop: '35px' }}>
             <div>
               <h2 style={{ margin: 0, fontSize: '20px', color: '#ffffff' }}>CHASS IMPORT</h2>
-              <span style={{ fontSize: '10px', color: '#22c55e', fontWeight: 'bold', display: 'block' }}>☁️ SUPABASE CONECTADO</span>
+              <span style={{ fontSize: '10px', color: colorTextoResaltado, fontWeight: 'bold', display: 'block' }}>
+                {esAdmin ? '☁️ SUPABASE CONECTADO (ADMIN)' : '🌸 SESIÓN DE TRABAJADORA'}
+              </span>
             </div>
           </div>
 
           <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <button onClick={() => cambiarSeccion('inicio')} style={{ padding: '12px', background: seccionActiva === 'inicio' ? 'rgba(239, 68, 68, 0.2)' : 'transparent', border: seccionActiva === 'inicio' ? '1px solid #ef4444' : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
+            <button onClick={() => cambiarSeccion('inicio')} style={{ padding: '12px', background: seccionActiva === 'inicio' ? (esAdmin ? 'rgba(59, 130, 246, 0.2)' : 'rgba(236, 72, 153, 0.25)') : 'transparent', border: seccionActiva === 'inicio' ? `1px solid ${colorPrimario}` : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
               🏢 1. Inicio — Caja
             </button>
-            <button onClick={() => cambiarSeccion('entradas')} style={{ padding: '12px', background: seccionActiva === 'entradas' ? 'rgba(239, 68, 68, 0.2)' : 'transparent', border: seccionActiva === 'entradas' ? '1px solid #ef4444' : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
+            <button onClick={() => cambiarSeccion('entradas')} style={{ padding: '12px', background: seccionActiva === 'entradas' ? (esAdmin ? 'rgba(59, 130, 246, 0.2)' : 'rgba(236, 72, 153, 0.25)') : 'transparent', border: seccionActiva === 'entradas' ? `1px solid ${colorPrimario}` : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
               🟢 2. Entradas {role === 'ADMIN' ? '(Monitoreo)' : '(Registro)'}
             </button>
-            <button onClick={() => cambiarSeccion('salidas')} style={{ padding: '12px', background: seccionActiva === 'salidas' ? 'rgba(239, 68, 68, 0.2)' : 'transparent', border: seccionActiva === 'salidas' ? '1px solid #ef4444' : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
+            <button onClick={() => cambiarSeccion('salidas')} style={{ padding: '12px', background: seccionActiva === 'salidas' ? (esAdmin ? 'rgba(59, 130, 246, 0.2)' : 'rgba(236, 72, 153, 0.25)') : 'transparent', border: seccionActiva === 'salidas' ? `1px solid ${colorPrimario}` : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
               🔴 3. Salidas {role === 'ADMIN' ? '(Monitoreo)' : '(Registro)'}
             </button>
-            <button onClick={() => cambiarSeccion('clientes')} style={{ padding: '12px', background: seccionActiva === 'clientes' ? 'rgba(239, 68, 68, 0.2)' : 'transparent', border: seccionActiva === 'clientes' ? '1px solid #ef4444' : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
+            <button onClick={() => cambiarSeccion('clientes')} style={{ padding: '12px', background: seccionActiva === 'clientes' ? (esAdmin ? 'rgba(59, 130, 246, 0.2)' : 'rgba(236, 72, 153, 0.25)') : 'transparent', border: seccionActiva === 'clientes' ? `1px solid ${colorPrimario}` : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
               👥 4. Clientes / Puntos
             </button>
             
             {role === 'ADMIN' && (
-              <button onClick={() => cambiarSeccion('registros')} style={{ padding: '12px', background: seccionActiva === 'registros' ? 'rgba(239, 68, 68, 0.2)' : 'transparent', border: seccionActiva === 'registros' ? '1px solid #ef4444' : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
+              <button onClick={() => cambiarSeccion('registros')} style={{ padding: '12px', background: seccionActiva === 'registros' ? 'rgba(59, 130, 246, 0.2)' : 'transparent', border: seccionActiva === 'registros' ? '1px solid #3b82f6' : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
                 📅 5. Historial Semanas
               </button>
             )}
 
-            <button onClick={() => cambiarSeccion('bitacora')} style={{ padding: '12px', background: seccionActiva === 'bitacora' ? 'rgba(239, 68, 68, 0.2)' : 'transparent', border: seccionActiva === 'bitacora' ? '1px solid #ef4444' : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
+            <button onClick={() => cambiarSeccion('bitacora')} style={{ padding: '12px', background: seccionActiva === 'bitacora' ? (esAdmin ? 'rgba(59, 130, 246, 0.2)' : 'rgba(236, 72, 153, 0.25)') : 'transparent', border: seccionActiva === 'bitacora' ? `1px solid ${colorPrimario}` : '1px solid transparent', color: '#fff', borderRadius: '8px', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer' }}>
               📝 {role === 'ADMIN' ? '6. Bitácora & Descargos' : '5. Bitácora & Descargos'}
             </button>
           </nav>
         </div>
 
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '15px' }}>
-          <div style={{ fontSize: '11px', color: '#60a5fa', marginBottom: '8px' }}>ROL: <strong style={{ color: role === 'ADMIN' ? '#ef4444' : '#22c55e' }}>{role}</strong> ({nombreUsuario})</div>
-          <button onClick={handleLogout} style={{ width: '100%', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#fca5a5', padding: '8px', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>CERRAR SESIÓN</button>
+          <div style={{ fontSize: '11px', color: colorTextoResaltado, marginBottom: '8px' }}>ROL: <strong style={{ color: esAdmin ? '#ef4444' : '#f472b6' }}>{role}</strong> ({nombreUsuario})</div>
+          <button onClick={handleLogout} style={{ width: '100%', background: esAdmin ? 'rgba(239, 68, 68, 0.15)' : 'rgba(236, 72, 153, 0.2)', border: `1px solid ${esAdmin ? '#ef4444' : '#ec4899'}`, color: esAdmin ? '#fca5a5' : '#fbcfe8', padding: '8px', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>CERRAR SESIÓN</button>
         </div>
       </aside>
 
@@ -391,9 +434,19 @@ export default function App() {
             onRegistrarIngreso={handleAgregarMovimiento} 
             onAbrirModal={m => setMovimientoModal(m)} 
             onEliminarMovimiento={handleEliminarMovimiento}
+            onEditarMovimiento={handleEditarMovimiento}
           />
         )}
-        {seccionActiva === 'salidas' && <SeccionSalidas role={role} nombreUsuario={nombreUsuario} movimientos={movimientos} onRegistrarSalida={handleAgregarMovimiento} />}
+        {seccionActiva === 'salidas' && (
+          <SeccionSalidas 
+            role={role} 
+            nombreUsuario={nombreUsuario} 
+            movimientos={movimientos} 
+            onRegistrarSalida={handleAgregarMovimiento}
+            onEliminarMovimiento={handleEliminarMovimiento}
+            onEditarMovimiento={handleEditarMovimiento}
+          />
+        )}
         {seccionActiva === 'clientes' && (
           <SeccionClientes 
             clientes={clientes} 
